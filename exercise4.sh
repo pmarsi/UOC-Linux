@@ -62,12 +62,13 @@ done
 
 # Allows to get last 24h modified files from particular directory
 
-function get_files {
+function get_last_modified_files {
 	echo -e "Last 24h modified files of $2: \n" | tee -a $REPORT_FILE_PATH$2-$REPORT_DATE
 	echo -e "\nLooking for in $1...\n"
-	# mtime allows find files 
-	find $1 -type f -user $2 -mtime 0 -exec ls -lth {} \; 2>/dev/null | sort -k 8 -n | tee -a $REPORT_FILE_PATH$2-$REPORT_DATE
+	# mtime allows to find last 24h modified files 
+	find $1 -type f -user $2 -mtime -1 -exec ls -lth {} \; 2>/dev/null | sort -k 8 -n | tee -a $REPORT_FILE_PATH$2-$REPORT_DATE
 }
+
 
 # Allows to get last connections of a particular user
 
@@ -75,18 +76,27 @@ function get_connections {
 	today=`date +%Y%m%d%H%M%S`
 	echo -e "Number of connections of $1: " | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 	# delete empty lines of output sed '/^$/d'
-	last $1 -t $today | grep -v wtmp | sed '/^$/d' | grep -v in | wc -l | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
+	last $1 -t $today | grep -v wtmp | sed '/^$/d' | grep -v logged | wc -l | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 	echo -e "\nTotal time of each connection: \n" | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
-	last $1 -t $today | sed '$d' | awk '{print $4,$5,$6,$NF}' | grep -v in | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
+	last $1 -t $today | sed '$d' | awk '{print $4,$5,$6,$NF}' | grep -v logged | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 }
 
 # Main function to execute several tasks
 
 function execute_tasks {
+
+	real_users=`awk -F: '(($6 ~ /\home/ || $1=="root") && ($NF !~ /\/bin\/false/ \
+				|| $1=="ftp")) && $3 >= 1024 {print $1}' /etc/passwd`
+	
 	if [ ${username} ]; then
 		if [ `awk -F: '{print $1}' /etc/passwd | grep ${username}` ]; then
 			if [ ${a} ]; then
-				get_files /home/${username} ${username}
+				if [ "$username" != "root" ]; then
+					path="/home/${username}"
+				else
+					path="/root"
+				fi
+				get_last_modified_files ${path} ${username}
 			elif [ ${e} ]; then
 				get_connections ${username}
 			fi
@@ -97,12 +107,17 @@ function execute_tasks {
 	else
 		if [ ${a} ]; then
 			# Only for "real users"
-			for user in $( awk -F: '{print $1,$6}' /etc/passwd | grep home | awk '{print $1}' ); do
-				for directories in $( find / -user $user -type d -perm -u=w -maxdepth 3 2> /dev/null | sort -u | uniq -c | awk '{print $2}' ); do
-					echo $user "--> " $directories
-					get_files ${directories} ${user}
+			if [ "$real_users" ]; then
+				for user in $real_users; do
+					echo "user:"
+					for directories in $( find / -user $user -type d -perm -u=w -maxdepth 3 2> /dev/null | sort -u | uniq -c | awk '{print $2}' ); do
+						get_last_modified_files ${directories} ${user}
+					done
 				done
-			done
+			else
+				echo "There are not real users"
+				exit 1
+			fi
 		elif [ ${e} ]; then
 			# I suppose that real users are those users have /home
 			for user in $( awk -F: '{print $1,$6}' /etc/passwd | grep home | awk '{print $1}' ); do

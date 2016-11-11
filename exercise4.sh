@@ -76,9 +76,9 @@ function get_connections {
 	today=`date +%Y%m%d%H%M%S`
 	echo -e "Number of connections of $1: " | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 	# delete empty lines of output sed '/^$/d'
-	last $1 -t $today | grep -v wtmp | sed '/^$/d' | grep -v logged | wc -l | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
+	last $1 -t $today | grep -v wtmp | sed '/^$/d' | grep -v "in" | wc -l | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 	echo -e "\nTotal time of each connection: \n" | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
-	last $1 -t $today | sed '$d' | awk '{print $4,$5,$6,$NF}' | grep -v logged | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
+	last $1 -t $today | sed '$d' | awk '{print $4,$5,$6,$NF}' | grep -v "in" | tee -a $REPORT_FILE_PATH$1-$REPORT_DATE
 }
 
 # Main function to execute several tasks

@@ -52,17 +52,18 @@ while getopts "ip:uvnf:h" opt; do
 done
 
 function get_owner_packages {
-	echo -e "Print the origin package of $1: \n"
+	echo -e "The origin package of $1: "
 	dpkg -S $1 | awk '{print $1}' | uniq | cut -d':' -f1	
 }
 
 function get_upgradeable_packages {
-	echo -e "Print all upgradeable packages: \n"
+	echo -e "All upgradeable packages: "
 	apt-show-versions -u | awk '{print $1, "\nNew package version: ", $5}'
 }
 
 function not_installed {
-	echo "nada"
+	# TO-DO add pagination
+	apt-cache dump | grep -i -w package
 }
 
 function get_package_function {
@@ -71,7 +72,9 @@ function get_package_function {
 }
 
 function get_package_new_versions {
-	echo "nada"
+	echo -e "All packages with new versions: "
+	# TO-DO refactor this function. Improve standard output. Understand better the command
+	apt-cache policy | grep 500
 }
 # TO-DO: pagination
 # TO-DO: Replace for case statement

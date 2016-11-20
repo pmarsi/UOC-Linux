@@ -6,29 +6,56 @@ if [ "$1" == "" ]; then
 	exit 1
 fi
 
+function get_owner_packages {
+	echo -e "==== The origin package of $1 ===="
+	dpkg -S $1 | awk '{print $1}' | uniq | cut -d':' -f1	
+}
+
+function get_upgradeable_packages {
+	echo -e "==== All upgradeable packages ===="
+	apt-show-versions -u | awk '{print $1, "\nNew package version: ", $5}' | less
+}
+
+function not_installed {
+	echo -e "==== Not installed packages ===="
+	apt-cache dump | grep -i -w package
+}
+
+function get_package_function {
+	echo -e "==== Function of $1 ===="
+	apt-cache show $1 | grep Description-en | uniq
+}
+
+function get_package_new_versions {
+	echo -e "==== All packages with new versions ===="
+	# TO-DO refactor this function. Improve standard output. Understand better the command
+	apt-cache policy | grep 500
+}
+
 # get parameters
 
 while getopts "ip:uvnf:h" opt; do
 	case $opt in
 		i)
-			i=true
+			echo -e "==== Installed packages ===="
+			dpkg -l | awk '{print $2}' | less
 			;;
 		p)
-			p=true
 			installed_packages=${OPTARG}
+			get_owner_packages ${installed_packages}
 			;;
 		u)
-			upgradeable_packages=true
+			get_upgradeable_packages
 			;;
 		v)
-			versions=true
+			get_package_new_versions
 			;;
 		n)
-			not_installed=true
+			not_installed 
 			;;
 		f)
-			f=true
 			function=${OPTARG}
+			get_package_function ${function}
 			;;
 		h)
 			echo -e "Usage:
@@ -50,47 +77,3 @@ while getopts "ip:uvnf:h" opt; do
 			;;
 	esac
 done
-
-function get_owner_packages {
-	echo -e "The origin package of $1: "
-	dpkg -S $1 | awk '{print $1}' | uniq | cut -d':' -f1	
-}
-
-function get_upgradeable_packages {
-	echo -e "All upgradeable packages: "
-	apt-show-versions -u | awk '{print $1, "\nNew package version: ", $5}'
-}
-
-function not_installed {
-	# TO-DO add pagination
-	apt-cache dump | grep -i -w package
-}
-
-function get_package_function {
-	echo -e "Function of $1: \n"
-	apt-cache show $1 | grep Description-en | uniq
-}
-
-function get_package_new_versions {
-	echo -e "All packages with new versions: "
-	# TO-DO refactor this function. Improve standard output. Understand better the command
-	apt-cache policy | grep 500
-}
-# TO-DO: pagination
-# TO-DO: Replace for case statement
-
-if [ "$p" ]; then
-	get_owner_packages ${installed_packages}
-	exit 0
-elif [ "$upgradeable_packages" ]; then
-	get_upgradeable_packages
-elif [ "$versions" ]; then
-	get_package_new_versions
-elif [ "$f" ]; then
-	get_package_function ${function}
-elif [ "$not_installed" ]; then
-	not_installed 
-elif [ "$i" ]; then
-	echo -e "Installed packages: \n"
-	dpkg -l | awk '{print $2}'
-fi

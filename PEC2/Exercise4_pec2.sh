@@ -8,17 +8,18 @@ fi
 
 function get_owner_packages {
 	echo -e "==== The origin package of $1 ===="
-	dpkg -S $1 | awk '{print $1}' | uniq | cut -d':' -f1	
+	dpkg -S $1 | awk '{print $1}' | uniq | cut -d':' -f1 | sort -n | less	
 }
 
 function get_upgradeable_packages {
 	echo -e "==== All upgradeable packages ===="
-	apt-show-versions -u | awk '{print $1, "\nNew package version: ", $5}' | less
+	#apt-show-versions -u | awk '{print $1, "\nNew package version: ", $5}' | sort -n | less
+	apt list --upgradeable | sort -n | less
 }
 
 function not_installed {
 	echo -e "==== Not installed packages ===="
-	apt-cache dump | grep -i -w package
+	apt-cache dump | grep -i -w package | sort -n | less
 }
 
 function get_package_function {
@@ -28,8 +29,20 @@ function get_package_function {
 
 function get_package_new_versions {
 	echo -e "==== All packages with new versions ===="
-	# TO-DO refactor this function. Improve standard output. Understand better the command
-	apt-cache policy | grep 500
+	#apt-cache policy $1 | grep 500 | sort -n | less
+	upgrade_versions=`apt list --upgradeable | awk '{print $2}' cut -d'.' -f1`
+	old_version=`apt list --upgradeable | awk '{print $6}' | cut -d'.' -f1` 
+	for i in $old_version; do
+		for m in $upgrade_versions; do
+			if [ "$i" == "$m" ]; then
+				echo "New version: ", $m
+
+			else
+				echo "There aren't new versions, only new releases"
+			fi
+		done
+	done	
+
 }
 
 # get parameters
@@ -38,7 +51,7 @@ while getopts "ip:uvnf:h" opt; do
 	case $opt in
 		i)
 			echo -e "==== Installed packages ===="
-			dpkg -l | awk '{print $2}' | less
+			dpkg -l | awk '{print $2}' | sort -n | less
 			;;
 		p)
 			installed_packages=${OPTARG}
@@ -48,6 +61,7 @@ while getopts "ip:uvnf:h" opt; do
 			get_upgradeable_packages
 			;;
 		v)
+			new_versions=${OPTARG}
 			get_package_new_versions
 			;;
 		n)

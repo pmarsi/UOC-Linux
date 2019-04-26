@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FILENAME=`date +%Y%m%d`_user_files
-
+echo "using logging"
 # check parameters
 
 if [ "$1" == "" ]; then

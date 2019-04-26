@@ -1,0 +1,2 @@
+
+echo "Tests for scripts"

@@ -3,6 +3,7 @@
 # check if user is root
 
 if [ "$UID" != 0 ]; then
+	echo "Error while executing the script..."
 	echo "Script must be executed by root"
 	exit 1
 fi 

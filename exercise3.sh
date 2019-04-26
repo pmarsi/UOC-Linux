@@ -5,6 +5,7 @@ FILENAME=`date +%Y%m%d`_user_files
 # check parameters
 
 if [ "$1" == "" ]; then
+	echo "Fail"
 	echo "Illegal number of parameters: ./execise3.sh -h for help"
 	exit 1
 fi
